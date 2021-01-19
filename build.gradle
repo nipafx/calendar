@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform('org.springframework.boot:spring-boot-dependencies:2.4.2')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+    testImplementation 'org.junit.jupiter:junit-jupiter-engine'
+}
+
+group = 'dev.nipafx.calendar'
+version = '0.0.1-SNAPSHOT'
+description = 'calendar'
+
+tasks.withType(JavaCompile).configureEach { task ->
+    task.options.release = 15
+    task.options.compilerArgs += '--enable-preview'
+    task.options.encoding = 'UTF-8'
+}
+
+tasks.withType(Test).configureEach { task ->
+    task.useJUnitPlatform()
+    task.jvmArgs += '--enable-preview'
+}
+
+tasks.register('run', JavaExec) {task ->
+    task.group = 'application'
+    task.main = 'dev.nipafx.calendar.spring.CalendarApplication'
+    task.jvmArgs += '--enable-preview'
+    task.classpath = sourceSets.main.runtimeClasspath
+}

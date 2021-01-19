@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Configuration;
 // consider using `@ConfigurationProperties` to create an object
 // that holds all the configuration values
 // https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config-typesafe-configuration-properties
-
-@Configuration
 public class CalendarConfiguration {
 
 	@Bean
@@ -19,6 +17,11 @@ public class CalendarConfiguration {
 			@Value("${data.folder}") String jsonFolder,
 			ObjectMapper jsonMapper) {
 		return new JsonRepository(jsonFolder, jsonMapper);
+	}
+
+	@Bean
+	public Controller controller(Repository repository) {
+		return new Controller(repository);
 	}
 
 }

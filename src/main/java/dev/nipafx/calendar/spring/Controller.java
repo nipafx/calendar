@@ -6,13 +6,13 @@ import dev.nipafx.calendar.entries.Entry;
 import dev.nipafx.calendar.entries.Person;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
 
-@RestController
+@ResponseBody
 @RequestMapping("/api")
 public class Controller {
 

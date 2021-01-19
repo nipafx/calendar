@@ -1,23 +1,29 @@
 plugins {
     id 'java'
+    id 'de.jjohannes.extra-java-module-info' version '0.5'
+    id 'com.github.iherasymenko.jlink' version '0.1'
 }
+
+group = 'dev.nipafx.calendar'
+version = '0.0.1-SNAPSHOT'
+description = 'calendar'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    implementation enforcedPlatform('org.springframework.boot:spring-boot-dependencies:2.4.2')
-
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    implementation platform('org.springframework.boot:spring-boot-dependencies:2.4.2')
+    implementation 'io.projectreactor.tools:blockhound:1.0.4.RELEASE'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'jakarta.servlet:jakarta.servlet-api'
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
     testImplementation 'org.junit.jupiter:junit-jupiter-engine'
 }
 
-group = 'dev.nipafx.calendar'
-version = '0.0.1-SNAPSHOT'
-description = 'calendar'
+java {
+    modularity.inferModulePath = true // Enable compilation with module path
+}
 
 tasks.withType(JavaCompile).configureEach { task ->
     task.options.release = 15
@@ -30,9 +36,365 @@ tasks.withType(Test).configureEach { task ->
     task.jvmArgs += '--enable-preview'
 }
 
-tasks.register('run', JavaExec) {task ->
+tasks.register('run', JavaExec) { task ->
     task.group = 'application'
     task.main = 'dev.nipafx.calendar.spring.CalendarApplication'
     task.jvmArgs += '--enable-preview'
-    task.classpath = sourceSets.main.runtimeClasspath
+    task.classpath = files(jar, configurations.runtimeClasspath)
+    task.systemProperty 'java.util.logging.manager', 'org.apache.logging.log4j.jul.LogManager'
+    // Enable execution with module path
+    task.mainModule = 'dev.nipafx.calendar'
+    task.modularity.inferModulePath = true
+}
+
+tasks.register('image', com.github.iherasymenko.jlink.JlinkImageTask) { task ->
+    task.group = 'build'
+    task.outputFolder = new File(buildDir, "images/calendar")
+    task.modulePath = files(jar, configurations.runtimeClasspath)
+    task.mainModule = 'dev.nipafx.calendar'
+    task.noHeaderFiles = true
+    task.noManPages = true
+    task.compress = 2
+    task.launchers = [
+            'calendar': 'dev.nipafx.calendar/dev.nipafx.calendar.spring.CalendarApplication'
+    ]
+    task.jvmArgs = ['--enable-preview', '-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager']
+}
+
+extraJavaModuleInfo {
+
+    module('spring-boot-2.4.2.jar', 'spring.boot', '1') {
+        requires 'spring.aop'
+        requires 'spring.core'
+        requires 'spring.beans'
+        requires 'spring.context'
+        requires 'spring.jcl'
+
+        requires 'java.desktop'
+
+        requiresStatic 'reactor.core'
+        requiresStatic 'reactor.netty.core'
+        requiresStatic 'reactor.netty.http'
+        requiresStatic 'io.netty.common'
+        requiresStatic 'io.netty.transport'
+        requiresStatic 'spring.web'
+        requiresStatic 'spring.webflux'
+        requiresStatic 'org.apache.logging.log4j.core'
+        requiresStatic 'java.servlet'
+        requiresStatic 'com.fasterxml.jackson.databind'
+
+        exports 'org.springframework.boot'
+    }
+
+    module('spring-boot-autoconfigure-2.4.2.jar', 'spring.boot.autoconfigure', '1') {
+        exports 'org.springframework.boot.autoconfigure'
+
+        requires 'spring.boot'
+
+        requires 'spring.aop'
+        requires 'spring.core'
+        requires 'spring.context'
+        requires 'spring.beans'
+        requires 'spring.jcl'
+
+        requiresStatic 'spring.web'
+        requiresStatic 'spring.webflux'
+        requiresStatic 'reactor.netty.http'
+        requiresStatic 'com.fasterxml.jackson.annotation'
+        requiresStatic 'com.fasterxml.jackson.databind'
+        requiresStatic 'com.fasterxml.jackson.module.paramnames'
+    }
+
+    module('spring-boot-starter-log4j2-2.4.2.jar', 'spring.boot.starter.log4j2', '1') {
+        requires 'org.apache.logging.log4j'
+        requires 'org.apache.logging.log4j.core'
+        requires 'org.apache.logging.log4j.jul'
+    }
+
+    module('spring-boot-starter-2.4.2.jar', 'spring.boot.starter', '1') {
+        requiresTransitive 'java.annotation'
+        requiresTransitive 'spring.boot'
+        requiresTransitive 'spring.boot.autoconfigure'
+        requiresTransitive 'spring.boot.starter.log4j2'
+        requiresTransitive 'spring.core'
+        requiresTransitive 'org.yaml.snakeyaml'
+    }
+
+    module('spring-boot-starter-reactor-netty-2.4.2.jar', 'spring.boot.starter.reactor.netty', '1') {
+        requires 'reactor.netty.http'
+    }
+
+    module('spring-boot-starter-json-2.4.2.jar', 'spring.boot.starter.json', '1') {
+        requiresTransitive 'spring.boot.starter'
+        requiresTransitive 'spring.web'
+        requiresTransitive 'com.fasterxml.jackson.databind'
+        requiresTransitive 'com.fasterxml.jackson.datatype.jdk8'
+        requiresTransitive 'com.fasterxml.jackson.datatype.jsr310'
+        requiresTransitive 'com.fasterxml.jackson.module.paramnames'
+    }
+
+    module('spring-boot-starter-webflux-2.4.2.jar', 'spring.boot.starter.webflux', '1') {
+        requiresTransitive 'spring.boot.starter'
+        requiresTransitive 'spring.boot.starter.reactor.netty'
+        requiresTransitive 'spring.boot.starter.json'
+        requiresTransitive 'spring.web'
+        requiresTransitive 'spring.webflux'
+    }
+
+    module('spring-jcl-5.3.3.jar', 'spring.jcl', '1') {
+        requires 'org.apache.logging.log4j'
+        exports 'org.apache.commons.logging'
+    }
+
+    module('spring-core-5.3.3.jar', 'spring.core', '1') {
+        requires 'reactor.core'
+        requires 'reactor.blockhound'
+        requires 'java.desktop'
+        requires 'spring.jcl'
+        requiresStatic 'io.netty.buffer'
+    }
+
+    module('spring-beans-5.3.3.jar', 'spring.beans', '1') {
+        requires 'java.desktop'
+        requires 'spring.core'
+        requires 'spring.jcl'
+        exports 'org.springframework.beans'
+        exports 'org.springframework.beans.factory.annotation'
+    }
+
+    module('spring-context-5.3.3.jar', 'spring.context', '1') {
+        requires 'java.annotation'
+        requires 'java.desktop'
+        requires 'java.naming'
+
+        requires 'spring.core'
+        requires 'spring.beans'
+        requires 'spring.aop'
+        requires 'spring.expression'
+        requires 'spring.jcl'
+
+        exports 'org.springframework.context'
+        exports 'org.springframework.context.annotation'
+    }
+
+    module('spring-aop-5.3.3.jar', 'spring.aop', '1') {
+        requires 'spring.core'
+        requires 'spring.beans'
+        requires 'spring.expression'
+    }
+
+    module('spring-expression-5.3.3.jar', 'spring.expression', '1') {
+        requires 'spring.core'
+    }
+
+    module('spring-web-5.3.3.jar', 'spring.web', '1') {
+        requires 'spring.aop'
+        requires 'spring.beans'
+        requires 'spring.core'
+        requires 'spring.context'
+        requires 'spring.jcl'
+
+        requires 'java.servlet'
+
+        requiresStatic 'reactor.core'
+        requiresStatic 'reactor.netty'
+        requiresStatic 'reactor.netty.core'
+        requiresStatic 'reactor.netty.http'
+        requiresStatic 'com.fasterxml.jackson.databind'
+
+        exports 'org.springframework.web.bind.annotation'
+        exports 'org.springframework.http.converter.json'
+    }
+
+    module('spring-webflux-5.3.3.jar', 'spring.webflux', '1') {
+        requires 'reactor.core'
+        requires 'spring.context'
+        requires 'spring.beans'
+        requires 'spring.jcl'
+        requires 'spring.aop'
+        requires 'spring.core'
+        requires 'spring.web'
+    }
+
+    module('log4j-core-2.13.3.jar', 'org.apache.logging.log4j.core', '1') {
+        requires 'java.compiler'
+        requires 'java.desktop'
+        requires 'java.management'
+        requiresTransitive 'org.apache.logging.log4j'
+        exports 'org.apache.logging.log4j.core'
+    }
+
+    module('log4j-jul-2.13.3.jar', 'org.apache.logging.log4j.jul', '1') {
+        requires 'org.apache.logging.log4j'
+        requires 'org.apache.logging.log4j.core'
+        requires 'java.logging'
+    }
+
+    module('jakarta.annotation-api-1.3.5.jar', 'java.annotation', '1') {
+        exports 'javax.annotation'
+        exports 'javax.annotation.sql'
+        exports 'javax.annotation.security'
+    }
+
+    module('jakarta.servlet-api-4.0.4.jar', 'java.servlet', '1') {
+        exports 'javax.servlet'
+        exports 'javax.servlet.annotation'
+        exports 'javax.servlet.descriptor'
+        exports 'javax.servlet.http'
+    }
+
+    module('snakeyaml-1.27.jar', 'org.yaml.snakeyaml', '1') {
+        exports 'org.yaml.snakeyaml'
+    }
+
+    module('reactor-netty-http-1.0.3.jar', 'reactor.netty.http', '1') {
+        requiresTransitive 'io.netty.buffer'
+        requiresTransitive 'io.netty.common'
+        requiresTransitive 'io.netty.codec'
+        requiresTransitive 'io.netty.codec.http'
+        requiresTransitive 'io.netty.codec.http2'
+        requiresTransitive 'io.netty.handler'
+        requiresTransitive 'io.netty.resolver.dns'
+        requiresTransitive 'io.netty.resolver.dns.macos'
+        requiresTransitive 'io.netty.transport'
+        requiresTransitive 'io.netty.transport.epoll'
+        requiresTransitive 'reactor.core'
+        requiresTransitive 'reactor.netty.core'
+    }
+
+    module('reactor-netty-core-1.0.3.jar', 'reactor.netty.core', '1') {
+        requiresTransitive 'io.netty.buffer'
+        requiresTransitive 'io.netty.common'
+        requiresTransitive 'io.netty.transport'
+        requiresTransitive 'io.netty.handler'
+        requiresTransitive 'io.netty.handler.proxy'
+        requiresTransitive 'io.netty.resolver.dns'
+        requiresTransitive 'io.netty.resolver.dns.macos'
+        requiresTransitive 'io.netty.transport.epoll'
+        requiresTransitive 'reactor.core'
+    }
+
+    module('blockhound-1.0.4.RELEASE.jar', 'reactor.blockhound', '1') {
+        exports 'reactor.blockhound'
+        exports 'reactor.blockhound.integration'
+    }
+
+    module('reactive-streams-1.0.3.jar', 'org.reactivestreams', '1') {
+        exports 'org.reactivestreams'
+    }
+
+    module('reactor-core-3.4.2.jar', 'reactor.core', '1') {
+        requires 'reactor.blockhound'
+        requiresTransitive 'org.reactivestreams'
+    }
+
+    module('netty-common-4.1.58.Final.jar', 'io.netty.common', '1') {
+        requires 'reactor.blockhound'
+        requires 'java.logging'
+    }
+
+    module('netty-buffer-4.1.58.Final.jar', 'io.netty.buffer', '1') {
+        requires 'io.netty.common'
+    }
+
+    module('netty-resolver-4.1.58.Final.jar', 'io.netty.resolver', '1') {
+        requires 'io.netty.common'
+    }
+
+    module('netty-transport-4.1.58.Final.jar', 'io.netty.transport', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.resolver'
+    }
+
+    module('netty-codec-4.1.58.Final.jar', 'io.netty.codec', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+    }
+
+    module('netty-codec-4.1.58.Final.jar', 'io.netty.codec', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+    }
+
+    module('netty-handler-4.1.58.Final.jar', 'io.netty.handler', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.resolver'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+    }
+
+    module('netty-codec-dns-4.1.58.Final.jar', 'io.netty.codec.dns', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+    }
+
+    module('netty-codec-http-4.1.58.Final.jar', 'io.netty.codec.http', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+        requires 'io.netty.handler'
+    }
+
+    module('netty-codec-socks-4.1.58.Final.jar', 'io.netty.codec.socks', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+    }
+
+    module('netty-codec-http2-4.1.58.Final.jar', 'io.netty.codec.http2', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+        requires 'io.netty.handler'
+        requires 'io.netty.codec.http'
+    }
+
+    module('netty-resolver-dns-4.1.58.Final.jar', 'io.netty.resolver.dns', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.resolver'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+        requires 'io.netty.codec.dns'
+        requires 'io.netty.handler'
+    }
+
+    module('netty-handler-proxy-4.1.58.Final.jar', 'io.netty.handler.proxy', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requires 'io.netty.codec'
+        requires 'io.netty.codec.dns'
+        requires 'io.netty.codec.socks'
+        requires 'io.netty.codec.http'
+    }
+
+    module('netty-transport-native-unix-common-4.1.58.Final.jar', 'io.netty.transport.unix.common', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+    }
+
+    module('netty-transport-native-epoll-4.1.58.Final-linux-x86_64.jar', 'io.netty.transport.epoll', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.buffer'
+        requires 'io.netty.transport'
+        requiresTransitive 'io.netty.transport.unix.common'
+    }
+
+    module('netty-resolver-dns-native-macos-4.1.58.Final-osx-x86_64.jar', 'io.netty.resolver.dns.macos', '1') {
+        requires 'io.netty.common'
+        requires 'io.netty.resolver.dns'
+        requiresTransitive 'io.netty.transport.unix.common'
+    }
+
 }

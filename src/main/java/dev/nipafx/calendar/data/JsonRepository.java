@@ -18,6 +18,7 @@ import java.util.OptionalInt;
 import java.util.stream.Stream;
 
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toList;
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.joining;
@@ -78,7 +79,7 @@ public class JsonRepository implements Repository {
 						categories.get(entry.category),
 						Stream.concat(entry.person().stream(), entry.persons().stream().flatMap(Collection::stream))
 								.distinct()
-								.map(persons::get).toList()
+								.map(persons::get).collect(toList())
 				))
 				.toArray(Entry[]::new);
 	}

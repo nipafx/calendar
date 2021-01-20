@@ -291,6 +291,7 @@ extraJavaModuleInfo {
     module('netty-common-4.1.58.Final.jar', 'io.netty.common', '1') {
         requires 'reactor.blockhound'
         requires 'java.logging'
+        requires 'jdk.unsupported' // Unsafe :-(
     }
 
     module('netty-buffer-4.1.58.Final.jar', 'io.netty.buffer', '1') {

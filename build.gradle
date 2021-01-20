@@ -38,18 +38,39 @@ tasks.withType(Test).configureEach { task ->
 
 tasks.register('run', JavaExec) { task ->
     task.group = 'application'
+    task.description = 'Run the application on module path.'
     task.main = 'dev.nipafx.calendar.spring.CalendarApplication'
     task.jvmArgs += '--enable-preview'
     task.classpath = files(jar, configurations.runtimeClasspath)
     task.systemProperty 'java.util.logging.manager', 'org.apache.logging.log4j.jul.LogManager'
-    // Enable execution with module path
+    task.mainModule = 'dev.nipafx.calendar'
+    task.modularity.inferModulePath = true
+}
+
+tasks.register('runOnClasspath', JavaExec) { task ->
+    task.group = 'application'
+    task.description = 'Run the application on classpath. Useful for debugging weird issues that cannot be explained otherwise.'
+    task.main = 'dev.nipafx.calendar.spring.CalendarApplication'
+    task.jvmArgs += '--enable-preview'
+    task.classpath = sourceSets.main.runtimeClasspath
+    task.systemProperty 'java.util.logging.manager', 'org.apache.logging.log4j.jul.LogManager'
+}
+
+tasks.register('runJLinked', JavaExec) { task ->
+    task.group = 'application'
+    task.description = 'Run the JLinked version of the application.'
+    task.dependsOn(tasks.named('image'))
+    task.executable("$buildDir/images/calendar/bin/java")
+    task.main = 'dev.nipafx.calendar.spring.CalendarApplication'
     task.mainModule = 'dev.nipafx.calendar'
     task.modularity.inferModulePath = true
 }
 
 tasks.register('image', com.github.iherasymenko.jlink.JlinkImageTask) { task ->
     task.group = 'build'
+    task.description = 'Build a distribution with the current JDK bundled.'
     task.outputFolder = new File(buildDir, "images/calendar")
+   // task.jdkFolder = file("/path/to/a/windows/jdk")
     task.modulePath = files(jar, configurations.runtimeClasspath)
     task.mainModule = 'dev.nipafx.calendar'
     task.noHeaderFiles = true
@@ -59,6 +80,10 @@ tasks.register('image', com.github.iherasymenko.jlink.JlinkImageTask) { task ->
             'calendar': 'dev.nipafx.calendar/dev.nipafx.calendar.spring.CalendarApplication'
     ]
     task.jvmArgs = ['--enable-preview', '-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager']
+}
+
+tasks.named('build') { task ->
+    task.dependsOn(tasks.named('image'))
 }
 
 extraJavaModuleInfo {
